@@ -180,10 +180,10 @@
         <p>Type or paste Arabic text to instantly<br>identify the verse and see translations.</p>
       </div>
       <div class="samples">
-        <span class="sample-chip" onclick="setSample('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')">بِسْمِ اللَّهِ</span>
-        <span class="sample-chip" onclick="setSample('الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ')">الْحَمْدُ لِلَّهِ</span>
-        <span class="sample-chip" onclick="setSample('قُلْ هُوَ اللَّهُ أَحَدٌ')">قُلْ هُوَ اللَّهُ</span>
-        <span class="sample-chip" onclick="setSample('اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ')">آيَةُ الْكُرْسِيِّ</span>
+        <span class="sample-chip" onclick="setSample('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')">بِسْمِ اللَّهِ</span>
+        <span class="sample-chip" onclick="setSample('الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ')">الْحَمْدُ لِلَّهِ</span>
+        <span class="sample-chip" onclick="setSample('قُلْ هُوَ اللَّهُ أَحَدٌ')">قُلْ هُوَ اللَّهُ</span>
+        <span class="sample-chip" onclick="setSample('اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ')">آيَةُ الْكُرْسِيِّ</span>
       </div>
       <div class="cam-note" id="camNote">💡 Keep the Arabic text inside the frame, steady your hand, then tap Capture.</div>
       <div class="camera-box" id="cameraBox">
@@ -249,7 +249,13 @@
 </div>
 
 <script>
-const API = '/api/v1';
+// ── API Configuration ──────────────────────────────────────────────
+// UPDATE THIS with your Oracle Cloud public IP after deployment
+const API_BASE_URL = 'http://YOUR_ORACLE_IP';
+const API = window.location.hostname === 'localhost' 
+  ? '/api/v1' 
+  : API_BASE_URL + '/api/v1';
+
 let selectedLang = 'english', isDetecting = false;
 const _lastVerse = {};
 

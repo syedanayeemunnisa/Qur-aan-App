@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: qur-aan-app-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: PORT
+        value: "10000"
