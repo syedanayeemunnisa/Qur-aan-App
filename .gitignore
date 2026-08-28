@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Backend
+backend/*.db
+backend/.env
+
+# Flutter
+flutter_app/.dart_tool/
+flutter_app/.packages
+flutter_app/build/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/ios/Pods/
+flutter_app/ios/.symlinks/
+flutter_app/android/.gradle/
+flutter_app/android/local.properties
+flutter_app/android/key.properties
+flutter_app/.idea/
+flutter_app/*.iml
+flutter_app/.metadata
+
+# Data
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+data/raw/
+
+# AI
+ai/models/*.pt
+ai/models/*.pth
+ai/models/*.h5
+ai/embeddings/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs & debug
+*.log
+backend/server_console.log
+backend/server_log.txt
+backend/server_start.log
+backend_server.log
+debug_*.py
+debug_*.txt
+test_*.txt
+
+# Temp / OS
+nul
+.DS_Store
+Thumbs.db
+
+# Freebuff
+.freebuff/
+
+# Python build artifacts
+*.pyc
+*.pyo
+

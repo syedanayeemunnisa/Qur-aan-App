@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quranic — Real-Time Quran Translation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0f0f1a; color: #e0e0e0;
+    min-height: 100vh; display: flex; justify-content: center; padding: 20px;
+  }
+  .phone {
+    max-width: 420px; width: 100%;
+    background: #1a1a2e; border-radius: 40px; padding: 16px 16px 0;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 2px #2a2a3e;
+    display: flex; flex-direction: column; height: 90vh; max-height: 820px;
+  }
+  .phone-notch {
+    width: 150px; height: 24px; background: #0f0f1a;
+    border-radius: 0 0 16px 16px; margin: -16px auto 0; position: relative; z-index: 10; flex-shrink: 0;
+  }
+  .phone-content {
+    background: #1a1a2e; border-radius: 28px 28px 0 0;
+    display: flex; flex-direction: column; flex: 1; overflow: hidden;
+  }
+  .scroll-area { flex: 1; overflow-y: auto; padding: 0 4px; }
+  .scroll-area::-webkit-scrollbar { width: 3px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .header { padding: 16px 16px 8px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .header-icon { width: 34px; height: 34px; background: linear-gradient(135deg,#1b5e20,#2e7d32); border-radius: 10px; display:flex;align-items:center;justify-content:center;font-size:18px; }
+  .header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+  .header .tagline { font-size: 10px; color: #888; margin-top: -1px; }
+
+  .tab-bar {
+    display: flex; background: #252540; border-radius: 16px 16px 0 0;
+    margin: 0; padding: 4px; gap: 4px; flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; text-align: center; padding: 8px 4px 6px;
+    border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+    color: #666; transition: all 0.2s; border: none; background: transparent;
+  }
+  .tab .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+  .tab.active { background: #1a1a2e; color: #c8a951; }
+  .tab:hover { color: #999; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .scan-card {
+    margin: 6px 12px 10px; padding: 18px;
+    background: linear-gradient(135deg,#1b5e20,#1a3a1a); border-radius: 16px;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .scan-card::before { content: ''; position: absolute;inset:0; background: radial-gradient(circle at 30% 50%, rgba(200,169,81,0.1),transparent); }
+  .scan-card .icon { font-size: 28px; margin-bottom: 4px; }
+  .scan-card h2 { font-size: 15px; color: #fff; font-weight: 600; }
+  .scan-card p { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; line-height: 1.4; }
+
+  .input-area { margin: 0 12px 8px; }
+  .input-area textarea {
+    width: 100%; padding: 12px; background: #252540; border: 1px solid #333;
+    border-radius: 12px; color: #fff; font-size: 17px; font-family: 'Amiri', serif;
+    resize: none; min-height: 56px; direction: rtl;
+    transition: border-color 0.2s;
+  }
+  .input-area textarea:focus { outline: none; border-color: #c8a951; }
+  .input-area textarea::placeholder { font-family: 'Inter',sans-serif; font-size: 12px; direction: ltr; color: #555; }
+
+  .btn-row { display: flex; gap: 8px; margin: 0 12px 10px; }
+  .btn { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg,#c8a951,#b8942e); color: #1a1a2e; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 3px 12px rgba(200,169,81,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: #252540; color: #c8a951; border: 1px solid #333; }
+  .btn-secondary:hover { background: #2a2a45; }
+
+  .lang-row { display: flex; gap: 4px; margin: 0 12px 8px; flex-wrap: wrap; }
+  .lang-btn { padding: 4px 10px; border-radius: 16px; border: 1px solid #333; background: #252540; color: #888; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .lang-btn.active { background: rgba(200,169,81,0.12); border-color: #c8a951; color: #c8a951; }
+  .lang-btn:hover { border-color: #555; }
+
+  .pipeline { display: flex; gap: 3px; margin: 0 12px 8px; }
+  .step { flex: 1; text-align: center; padding: 4px 2px; border-radius: 6px; font-size: 8px; font-weight: 500; background: #252540; color: #444; transition: all 0.3s; }
+  .step.active { background: rgba(200,169,81,0.12); color: #c8a951; }
+  .step.done { background: rgba(27,94,32,0.15); color: #4caf50; }
+  .step .step-num { display: block; font-size: 12px; margin-bottom: 1px; }
+
+  .result { margin: 0 12px; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .verse-card { background: #252540; border-radius: 14px; padding: 16px; border: 1px solid #333; margin-bottom: 8px; }
+  .verse-card .ref { display: inline-block; padding: 2px 8px; background: rgba(27,94,32,0.15); color: #4caf50; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .verse-card .conf-badge { display: inline-block; padding: 2px 6px; background: rgba(200,169,81,0.08); color: #c8a951; border-radius: 10px; font-size: 10px; margin-left: 4px; }
+  .verse-card .arabic { font-family: 'Amiri', serif; font-size: 22px; text-align: center; direction: rtl; padding: 12px 0; line-height: 1.7; color: #fff; }
+  .verse-card .roman { font-style: italic; text-align: center; color: #888; font-size: 13px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+  .verse-card .translation { padding-top: 10px; font-size: 14px; line-height: 1.5; color: #bbb; }
+  .verse-card .translation .lang-label { font-size: 10px; color: #c8a951; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+
+  .error-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 12px; color: #ef4444; font-size: 12px; text-align: center; margin: 0 12px; }
+  .loading { text-align: center; padding: 24px; }
+  .spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: #c8a951; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .samples { display: flex; gap: 3px; margin: 0 12px 6px; flex-wrap: wrap; }
+  .sample-chip { padding: 3px 8px; background: #252540; border: 1px solid #333; border-radius: 12px; color: #777; font-size: 10px; cursor: pointer; transition: all 0.2s; direction: rtl; font-family: 'Amiri',serif; }
+  .sample-chip:hover { border-color: #c8a951; color: #c8a951; }
+
+  .camera-box { margin: 0 12px 8px; border-radius: 12px; overflow: hidden; border: 1px solid #333; background: #000; display: none; }
+  .camera-box video { width: 100%; display: block; aspect-ratio: 4/3; object-fit: cover; }
+  .camera-box .cam-actions { display: flex; gap: 8px; padding: 8px; background: #1a1a2e; }
+  .cam-note { font-size: 10px; color: #555; margin: 0 12px 8px; display: none; }
+
+  .footer { text-align: center; padding: 10px; font-size: 10px; color: #444; flex-shrink: 0; }
+  .footer .status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 8px; font-size: 10px; }
+  .status.online { background: rgba(76,175,80,0.08); color: #4caf50; }
+  .status.offline { background: rgba(239,68,68,0.08); color: #ef4444; }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+  .status-dot.green { background: #4caf50; }
+  .status-dot.red { background: #ef4444; }
+
+  /* Browse tab */
+  .search-input { width: 100%; padding: 10px 14px; background: #252540; border: 1px solid #333; border-radius: 12px; color: #fff; font-size: 13px; }
+  .search-input:focus { outline: none; border-color: #c8a951; }
+  .search-input::placeholder { color: #555; }
+
+  .surah-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; margin: 2px 0;
+    background: #252540; border: 1px solid #333; border-radius: 10px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .surah-item:hover { border-color: #c8a951; background: #2a2a45; }
+  .surah-item .num {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    background: rgba(200,169,81,0.1); border-radius: 8px;
+    font-size: 11px; font-weight: 700; color: #c8a951; flex-shrink: 0;
+  }
+  .surah-item .info { flex: 1; }
+  .surah-item .name { font-size: 14px; font-weight: 600; color: #ddd; }
+  .surah-item .name-ar { font-family: 'Amiri',serif; font-size: 16px; direction: rtl; color: #888; }
+  .surah-item .meta { font-size: 10px; color: #666; margin-top: 1px; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; margin: 0 0 8px; border-radius: 8px;
+    border: 1px solid #333; background: #252540; color: #c8a951;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .back-btn:hover { border-color: #c8a951; }
+
+  @media (max-width: 460px) { body { padding: 10px; } .phone { border-radius: 30px; padding: 12px 12px 0; } }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="phone-notch"></div>
+  <div class="phone-content">
+    <div class="header">
+      <div class="header-icon">📖</div>
+      <div><h1>Quranic</h1><div class="tagline">Read. Understand. Reflect.</div></div>
+      <div style="margin-left:auto;font-size:11px;color:#555" id="verseCount"></div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab active" data-tab="scan" onclick="switchTab('scan')"><span class="tab-icon">🔍</span>Scan</button>
+      <button class="tab" data-tab="browse" onclick="switchTab('browse')"><span class="tab-icon">📖</span>Browse</button>
+      <button class="tab" data-tab="search" onclick="switchTab('search')"><span class="tab-icon">🔎</span>Search</button>
+    </div>
+
+    <!-- ── SCAN TAB ── -->
+    <div class="scroll-area">
+    <div id="view-scan" class="view active">
+      <div class="scan-card">
+        <div class="icon">🔍</div>
+        <h2>Scan Quran Page</h2>
+        <p>Type or paste Arabic text to instantly<br>identify the verse and see translations.</p>
+      </div>
+      <div class="samples">
+        <span class="sample-chip" onclick="setSample('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ')">بِسْمِ اللَّهِ</span>
+        <span class="sample-chip" onclick="setSample('الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ')">الْحَمْدُ لِلَّهِ</span>
+        <span class="sample-chip" onclick="setSample('قُلْ هُوَ اللَّهُ أَحَدٌ')">قُلْ هُوَ اللَّهُ</span>
+        <span class="sample-chip" onclick="setSample('اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ')">آيَةُ الْكُرْسِيِّ</span>
+      </div>
+      <div class="cam-note" id="camNote">💡 Keep the Arabic text inside the frame, steady your hand, then tap Capture.</div>
+      <div class="camera-box" id="cameraBox">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <div class="cam-actions">
+          <button class="btn btn-primary" onclick="capturePhoto()">📸 Capture</button>
+          <button class="btn btn-secondary" onclick="toggleCamera()">✕ Close</button>
+        </div>
+      </div>
+      <div class="input-area"><textarea id="arabicInput" placeholder="Paste Arabic text here…"></textarea></div>
+      <div class="lang-row">
+        <button class="lang-btn active" data-lang="english" onclick="setLanguage('english',this)">🇬🇧 English</button>
+        <button class="lang-btn" data-lang="urdu" onclick="setLanguage('urdu',this)">🇵🇰 Urdu</button>
+        <button class="lang-btn" data-lang="hindi" onclick="setLanguage('hindi',this)">🇮🇳 Hindi</button>
+        <button class="lang-btn" data-lang="telugu" onclick="setLanguage('telugu',this)">🇮🇳 Telugu</button>
+        <button class="lang-btn" data-lang="roman" onclick="setLanguage('roman',this)">🔤 Roman Eng</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="detectBtn" onclick="detectVerse()">🔍 Detect Verse</button>
+        <button class="btn btn-secondary" id="cameraBtn" onclick="toggleCamera()">📷 Camera</button>
+        <button class="btn btn-secondary" onclick="clearScan()">✕ Clear</button>
+      </div>
+      <div class="pipeline" id="pipeline">
+        <div class="step" data-step="1"><span class="step-num">①</span> OCR</div>
+        <div class="step" data-step="2"><span class="step-num">②</span> Normalize</div>
+        <div class="step" data-step="3"><span class="step-num">③</span> Match</div>
+        <div class="step" data-step="4"><span class="step-num">④</span> Verse</div>
+        <div class="step" data-step="5"><span class="step-num">⑤</span> Translate</div>
+      </div>
+      <div id="result"></div>
+    </div>
+
+    <!-- ── BROWSE TAB ── -->
+    <div id="view-browse" class="view">
+      <div id="browseContent"></div>
+    </div>
+
+    <!-- ── SEARCH TAB ── -->
+    <div id="view-search" class="view">
+      <div style="padding:8px 12px 0;font-size:12px;color:#888">Search translations in your language:</div>
+      <div class="lang-row" style="margin-top:6px">
+        <button class="lang-btn active" data-lang="english" onclick="setLanguage('english',this)">🇬🇧 English</button>
+        <button class="lang-btn" data-lang="urdu" onclick="setLanguage('urdu',this)">🇵🇰 Urdu</button>
+        <button class="lang-btn" data-lang="hindi" onclick="setLanguage('hindi',this)">🇮🇳 Hindi</button>
+        <button class="lang-btn" data-lang="telugu" onclick="setLanguage('telugu',this)">🇮🇳 Telugu</button>
+        <button class="lang-btn" data-lang="roman" onclick="setLanguage('roman',this)">🔤 Roman Eng</button>
+      </div>
+      <div style="padding: 0 12px;margin-bottom:8px">
+        <input class="search-input" id="searchInput" placeholder="Search… (e.g. mercy, رحم, रहम, దయ)" onkeydown="if(event.key==='Enter')searchVerses()">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="searchVerses()">🔎 Search in <span id="searchLangLabel">English</span></button>
+      </div>
+      <div id="searchResults"></div>
+    </div>
+
+    </div><!-- /scroll-area -->
+
+    <div class="footer">
+      <span class="status" id="statusBadge"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking server…</span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/v1';
+let selectedLang = 'english', isDetecting = false;
+const _lastVerse = {};
+
+// 114 Surah names
+const SURAH_NAMES = [
+  "Al-Fatiha","Al-Baqarah","Aal-E-Imran","An-Nisa'","Al-Ma'idah","Al-An'am","Al-A'raf","Al-Anfal","At-Tawbah","Yunus",
+  "Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr","An-Nahl","Al-Isra'","Al-Kahf","Maryam","Ta-Ha",
+  "Al-Anbiya'","Al-Hajj","Al-Mu'minun","An-Nur","Al-Furqan","Ash-Shu'ara'","An-Naml","Al-Qasas","Al-'Ankabut","Ar-Rum",
+  "Luqman","As-Sajdah","Al-Ahzab","Saba'","Fatir","Ya-Sin","As-Saffat","Sad","Az-Zumar","Ghafir",
+  "Fussilat","Ash-Shura","Az-Zukhruf","Ad-Dukhan","Al-Jathiya","Al-Ahqaf","Muhammad","Al-Fath","Al-Hujurat","Qaf",
+  "Adh-Dhariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman","Al-Waqi'ah","Al-Hadid","Al-Mujadilah","Al-Hashr","Al-Mumtahanah",
+  "As-Saff","Al-Jumu'ah","Al-Munafiqun","At-Taghabun","At-Talaq","At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Ma'arij",
+  "Nuh","Al-Jinn","Al-Muzzammil","Al-Muddaththir","Al-Qiyamah","Al-Insan","Al-Mursalat","An-Naba'","An-Nazi'at","'Abasa",
+  "At-Takwir","Al-Infitar","Al-Mutaffifin","Al-Inshiqaq","Al-Buruj","At-Tariq","Al-A'la","Al-Ghashiyah","Al-Fajr","Al-Balad",
+  "Ash-Shams","Al-Layl","Ad-Duhaa","Ash-Sharh","At-Tin","Al-'Alaq","Al-Qadr","Al-Bayyinah","Az-Zalzalah","Al-'Adiyat",
+  "Al-Qari'ah","At-Takathur","Al-'Asr","Al-Humazah","Al-Fil","Quraysh","Al-Ma'un","Al-Kawthar","Al-Kafirun","An-Nasr",
+  "Al-Masad","Al-Ikhlas","Al-Falaq","An-Nas"
+];
+
+// Arabic names
+const SURAH_ARABIC = [
+  "الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس",
+  "هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه",
+  "الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم",
+  "لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر",
+  "فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق",
+  "الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة",
+  "الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج",
+  "نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس",
+  "التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد",
+  "الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات",
+  "القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر",
+  "المسد","الإخلاص","الفلق","الناس"
+];
+
+// Verse counts per surah
+const SURAH_VERSES = [7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6];
+
+document.addEventListener('DOMContentLoaded', () => { checkHealth(); loadVerseCount(); renderSurahList(); });
+
+// ── Tab Switching ──
+function switchTab(tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  if (tab === 'browse') renderSurahList();
+}
+
+// ── Health ──
+async function checkHealth() {
+  try {
+    const res = await fetch(API+'/health'); const data = await res.json();
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status online';
+    document.getElementById('statusDot').className = 'status-dot green';
+    document.getElementById('statusText').textContent = `Online — ${data.dataset_size} verses`;
+  } catch {
+    document.getElementById('statusBadge').className = 'status offline';
+    document.getElementById('statusDot').className = 'status-dot red';
+    document.getElementById('statusText').textContent = 'Offline — start backend';
+  }
+}
+async function loadVerseCount() {
+  try { const r=await fetch(API+'/health'); const d=await r.json(); document.getElementById('verseCount').textContent=d.dataset_size+' verses'; } catch {}
+}
+
+function setLanguage(lang, btn) {
+  selectedLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Update search button label
+  const label = document.getElementById('searchLangLabel');
+  if (label) {
+    const names = {english:'English',urdu:'Urdu',hindi:'Hindi',telugu:'Telugu',roman:'Roman English'};
+    label.textContent = names[lang] || lang;
+  }
+}
+function setSample(text) { document.getElementById('arabicInput').value=text; document.getElementById('arabicInput').focus(); }
+function clearScan() { document.getElementById('arabicInput').value=''; document.getElementById('result').innerHTML=''; }
+
+// ── CAMERA SCAN ──
+let _cameraStream = null;
+let _autoScanTimer = null;
+
+async function toggleCamera() {
+  const box = document.getElementById('cameraBox');
+  const note = document.getElementById('camNote');
+  if (_cameraStream) {
+    if (_autoScanTimer) { clearTimeout(_autoScanTimer); _autoScanTimer = null; }
+    _cameraStream.getTracks().forEach(t => t.stop());
+    _cameraStream = null;
+    box.style.display = 'none';
+    note.style.display = 'none';
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Camera not supported in this browser — use the text input instead</div>';
+    return;
+  }
+  try {
+    _cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } },
+      audio: false
+    });
+    const video = document.getElementById('cameraVideo');
+    video.srcObject = _cameraStream;
+    box.style.display = 'block';
+    note.style.display = 'block';
+    note.textContent = '📸 Point at the Arabic text and hold steady — scanning automatically. Tap Capture for a manual shot.';
+    try { await video.play(); } catch {}
+    // Auto-scan once the preview is warm
+    scheduleAutoScan(1500);
+  } catch (err) {
+    document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Camera access denied: ' + (err && err.message ? err.message : 'unknown error') + '</div>';
+  }
+}
+
+function scheduleAutoScan(delay) {
+  if (_autoScanTimer) clearTimeout(_autoScanTimer);
+  _autoScanTimer = setTimeout(autoScan, delay);
+}
+
+async function autoScan() {
+  _autoScanTimer = null;
+  const box = document.getElementById('cameraBox');
+  if (!_cameraStream || box.style.display !== 'block') return; // camera closed
+  if (isDetecting) { scheduleAutoScan(3000); return; }
+  const video = document.getElementById('cameraVideo');
+  if (!video.videoWidth || !video.videoHeight) { scheduleAutoScan(2000); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const imageBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  await detectImage(imageBase64, { auto: true });
+}
+
+async function capturePhoto() {
+  const video = document.getElementById('cameraVideo');
+  if (!video.videoWidth || !video.videoHeight) {
+    document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Camera preview not ready yet — wait a second and tap Capture again</div>';
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const imageBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  await detectImage(imageBase64, { auto: false });
+}
+
+async function detectImage(imageBase64, opts = {}) {
+  if (isDetecting) return;
+  isDetecting = true;
+  const btn = document.getElementById('detectBtn');
+  btn.disabled = true;
+  document.getElementById('result').innerHTML = '<div class="loading"><div class="spinner"></div><div style="color:#888;font-size:12px">Scanning… hold the page steady</div></div>';
+  activateStep(1,'active');
+  try {
+    const res = await fetch(API+'/detect', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image_base64:imageBase64, language:selectedLang})
+    });
+    const data = await res.json();
+    activateStep(1,'done'); activateStep(2,'done'); activateStep(3,'done');
+    if (data.success && data.matched_verse) {
+      activateStep(4,'done'); activateStep(5,'done');
+      renderVerse(data.matched_verse, data.alternatives||[]);
+      if (opts.auto) toggleCamera(); // stop scanning once matched
+    } else {
+      resetPipeline();
+      let msg = data.error || 'No match — try moving closer or improving lighting';
+      if (msg.indexOf('Camera OCR is not available') !== -1) {
+        // OCR engine broken — stop auto-scan, suggest text input
+        if (_autoScanTimer) { clearTimeout(_autoScanTimer); _autoScanTimer = null; }
+        document.getElementById('result').innerHTML = 
+          '<div class="error-box" style="line-height:1.6">'
+          + '⚠️ Camera OCR is not available on this server.<br>'
+          + '<span style="color:#c8a951;font-weight:600">Use the text box below</span> — type or paste the Arabic text and tap <b>Detect Verse</b>.</div>';
+        toggleCamera(); // close camera so user sees the text box
+        return;
+      }
+      if (msg.indexOf('No Arabic text') !== -1) {
+        msg = 'No Arabic text found — point at printed Arabic text, improve lighting, and hold steady';
+      }
+      document.getElementById('result').innerHTML = '<div class="error-box">❌ ' + msg + '</div>';
+      if (opts.auto) scheduleAutoScan(6000); // keep trying
+    }
+  } catch (err) {
+    resetPipeline();
+    document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Connection error — is the backend running?</div>';
+    if (opts.auto) scheduleAutoScan(6000);
+  } finally { isDetecting=false; btn.disabled=false; btn.textContent='🔍 Detect Verse'; }
+}
+
+function activateStep(n, state) {
+  document.querySelectorAll('.step').forEach(s => {
+    const i = parseInt(s.dataset.step);
+    s.className = i < n ? 'step done' : (i === n ? 'step '+state : 'step');
+  });
+}
+function resetPipeline() { document.querySelectorAll('.step').forEach(s => s.className='step'); }
+
+// ── DETECT ──
+async function detectVerse() {
+  const text = document.getElementById('arabicInput').value.trim();
+  if (!text) { document.getElementById('result').innerHTML='<div class="error-box">⚠️ Enter Arabic text first</div>'; return; }
+  if (isDetecting) return;
+  isDetecting = true;
+  const btn = document.getElementById('detectBtn');
+  btn.disabled = true; btn.textContent = '⏳ Working…';
+  document.getElementById('result').innerHTML = '<div class="loading"><div class="spinner"></div><div style="color:#888;font-size:12px">Identifying verse…</div></div>';
+  activateStep(1,'active'); activateStep(2,'active'); activateStep(3,'active');
+  try {
+    const res = await fetch(API+'/detect', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ocr_text:text, language:selectedLang})
+    });
+    const data = await res.json();
+    activateStep(1,'done'); activateStep(2,'done'); activateStep(3,'done');
+    if (data.success && data.matched_verse) {
+      activateStep(4,'done'); activateStep(5,'done');
+      renderVerse(data.matched_verse, data.alternatives||[]);
+    } else {
+      resetPipeline();
+      document.getElementById('result').innerHTML = '<div class="error-box">❌ '+(data.error||'No match')+'</div>';
+    }
+  } catch (err) {
+    resetPipeline();
+    document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Connection error</div>';
+  } finally { isDetecting=false; btn.disabled=false; btn.textContent='🔍 Detect Verse'; }
+}
+
+function renderVerse(verse, alternatives) {
+  Object.assign(_lastVerse, verse);
+  const langNames = {english:'English',urdu:'اردو (Urdu)',hindi:'हिन्दी (Hindi)',telugu:'తెలుగు (Telugu)',roman:'Roman English'};
+  let html = '<div class="result"><div class="verse-card">';
+  html += `<div><span class="ref">Surah ${verse.surah}:${verse.ayah}</span><span class="conf-badge">${Math.round(verse.confidence*100)}%</span></div>`;
+  html += `<div class="arabic">${verse.arabic}</div>`;
+  // Separate transliteration section — hide when roman IS the selected translation
+  if (verse.roman && verse.translation_language !== 'roman') html += `<div class="roman">${verse.roman}</div>`;
+  html += `<div class="translation"><div class="lang-label">${langNames[verse.translation_language]||verse.translation_language}</div>${verse.translation}</div>`;
+  html += `<div style="display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid #333">`;
+  html += `<span style="flex:1;text-align:center;padding:5px;background:#1a1a2e;border-radius:8px;color:#888;font-size:11px;cursor:pointer" onclick="lookupVerse(${verse.surah},${verse.ayah})">📖 Full View</span>`;
+  html += `<span style="flex:1;text-align:center;padding:5px;background:#1a1a2e;border-radius:8px;color:#888;font-size:11px;cursor:pointer" onclick="copyVerse()">📋 Copy</span>`;
+  html += `</div></div>`;
+  if (alternatives.length) {
+    html += '<div style="margin-top:8px"><div style="font-size:11px;color:#555;margin-bottom:4px">Also matched:</div>';
+    alternatives.forEach(a => { html += `<div style="padding:6px 10px;background:#252540;border-radius:6px;margin-bottom:3px;border:1px solid #333;font-size:11px"><span style="color:#4caf50;font-weight:600">${a.surah}:${a.ayah}</span><span style="color:#555;margin:0 6px">—</span><span style="color:#888;font-style:italic">${a.roman||''}</span></div>`; });
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('result').innerHTML = html;
+}
+
+async function lookupVerse(surah, ayah) {
+  document.getElementById('result').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(API+`/verse/${surah}/${ayah}?language=${selectedLang}`);
+    const verse = await res.json();
+    renderVerse({...verse,confidence:1}, []);
+  } catch { document.getElementById('result').innerHTML = '<div class="error-box">⚠️ Could not fetch</div>'; }
+}
+
+function clickSearchResult(verseKey) {
+  // Fetch the full verse data and populate the scan view
+  switchTab('scan');
+  const [surah, ayah] = verseKey.split(':').map(Number);
+  lookupVerse(surah, ayah);
+}
+
+function copyVerse() {
+  const v = _lastVerse;
+  const txt = v.arabic ? `Surah ${v.surah}:${v.ayah}\n${v.arabic}\n${v.roman||''}\n${v.translation||''}` : `Quranic App`;
+  navigator.clipboard.writeText(txt).then(() => {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4caf50;color:#fff;padding:6px 16px;border-radius:10px;font-size:12px;z-index:999';
+    el.textContent = '✓ Copied!'; document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  });
+}
+
+// ── BROWSE ──
+function renderSurahList() {
+  let html = '<div style="padding:0 12px;margin-bottom:6px;font-size:13px;font-weight:600;color:#aaa">All 114 Surahs</div>';
+  for (let i = 0; i < 114; i++) {
+    html += `<div class="surah-item" onclick="openSurah(${i+1})">
+      <div class="num">${i+1}</div>
+      <div class="info">
+        <div class="name">${SURAH_NAMES[i]}</div>
+        <div class="meta">${SURAH_VERSES[i]} verses</div>
+      </div>
+      <div class="name-ar">${SURAH_ARABIC[i]}</div>
+    </div>`;
+  }
+  document.getElementById('browseContent').innerHTML = html;
+}
+
+async function openSurah(surah) {
+  document.getElementById('browseContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    let html = `<button class="back-btn" onclick="renderSurahList()">← Back to Surahs</button>`;
+    html += `<div style="padding:0 12px;margin-bottom:8px"><span style="font-size:15px;font-weight:700;color:#c8a951">${surah}. ${SURAH_NAMES[surah-1]}</span> <span style="font-family:'Amiri',serif;font-size:18px;color:#888;direction:rtl">${SURAH_ARABIC[surah-1]}</span></div>`;
+
+    // Fetch verses concurrently (limited to first 10 for performance)
+    const limit = Math.min(SURAH_VERSES[surah-1], 10);
+    const promises = [];
+    for (let a = 1; a <= limit; a++) {
+      promises.push(
+        fetch(API+`/verse/${surah}/${a}?language=${selectedLang}`)
+          .then(r => r.json())
+          .catch(() => null)
+      );
+    }
+    let verses = (await Promise.all(promises)).filter(v => v && v.verse_key);
+
+    if (verses.length) {
+      verses.forEach(v => {
+        html += `<div class="verse-card" style="margin-bottom:6px;padding:12px">
+          <div><span class="ref">${v.verse_key}</span></div>
+          <div class="arabic" style="font-size:18px;padding:8px 0">${v.arabic}</div>
+          ${v.roman ? `<div class="roman" style="font-size:12px">${v.roman}</div>` : ''}
+          <div class="translation" style="font-size:12px;padding-top:6px">${v.translation}</div>
+        </div>`;
+      });
+      if (SURAH_VERSES[surah-1] > limit) {
+        html += `<div style="text-align:center;padding:10px;color:#555;font-size:11px">Showing ${limit} of ${SURAH_VERSES[surah-1]} verses</div>`;
+      }
+    } else {
+      html += '<div class="error-box">Could not load verses</div>';
+    }
+    document.getElementById('browseContent').innerHTML = html;
+  } catch { document.getElementById('browseContent').innerHTML = '<div class="error-box">⚠️ Error loading surah</div>'; }
+}
+
+// ── SEARCH ──
+async function searchVerses() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { document.getElementById('searchResults').innerHTML = '<div class="error-box">🔎 Enter a search term</div>'; return; }
+  document.getElementById('searchResults').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(API+`/search?q=${encodeURIComponent(q)}&language=${selectedLang}&limit=20`);
+    const data = await res.json();
+    if (!data.results || !data.results.length) {
+      document.getElementById('searchResults').innerHTML = '<div class="error-box">No results found</div>';
+      return;
+    }
+    let html = `<div style="padding:0 12px;margin-bottom:6px;font-size:12px;color:#888">${data.total} results for "${q}"</div>`;
+    data.results.forEach(v => {
+      html += `<div class="verse-card" style="margin-bottom:4px;padding:10px;cursor:pointer" onclick="clickSearchResult('${v.verse_key}')">
+        <div><span class="ref">${v.verse_key}</span></div>
+        <div class="arabic" style="font-size:16px;padding:6px 0">${v.arabic}</div>
+        ${v.roman ? `<div class="roman" style="font-size:11px">${v.roman}</div>` : ''}
+        <div class="translation" style="font-size:12px;padding-top:4px">…${v.translation}…</div>
+      </div>`;
+    });
+    document.getElementById('searchResults').innerHTML = html;
+  } catch { document.getElementById('searchResults').innerHTML = '<div class="error-box">⚠️ Search failed</div>'; }
+}
+</script>
+</body>
+</html>
