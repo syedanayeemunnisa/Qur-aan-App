@@ -250,8 +250,9 @@
 
 <script>
 // ── API Configuration ──────────────────────────────────────────────
-// UPDATE THIS with your Oracle Cloud public IP after deployment
-const API_BASE_URL = 'http://YOUR_ORACLE_IP';
+// UPDATE THIS with your Render backend URL after deployment
+// Format: https://your-app-name.onrender.com
+const API_BASE_URL = 'https://qur-aan-app-backend.onrender.com';
 const API = window.location.hostname === 'localhost' 
   ? '/api/v1' 
   : API_BASE_URL + '/api/v1';
